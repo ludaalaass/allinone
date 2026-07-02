@@ -4,8 +4,9 @@ const axios = require("axios");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Apni upstream API
-const API = "https://cooperation-swing-reed-formed.trycloudflare.com/chain";
+// Upstream API
+const API = "https://ft-osint-api.duckdns.org/api/leakinfo";
+const API_KEY = "nxsahilx928x926";
 
 app.get("/", (req, res) => {
   res.json({
@@ -28,13 +29,47 @@ app.get("/all-in-one", async (req, res) => {
     }
 
     const response = await axios.get(API, {
-      params: { q },
+      params: {
+        key: API_KEY,
+        term: q
+      },
       timeout: 15000
     });
 
     let data = response.data;
 
-    // Agar JSON object hai to developer fields add/update karo
+    // Replace/remove upstream branding
+    const replaceBranding = (obj) => {
+      if (typeof obj === "string") {
+        return obj
+          .replace(/@ftgamerv2/gi, "@sahilxalone")
+          .replace(/ftgamerv2/gi, "sahilxalone");
+      }
+
+      if (Array.isArray(obj)) {
+        return obj.map(replaceBranding);
+      }
+
+      if (obj && typeof obj === "object") {
+        delete obj.developer;
+        delete obj.footer;
+        delete obj.owner;
+        delete obj.credit;
+        delete obj.author;
+        delete obj.telegram;
+
+        for (const key in obj) {
+          obj[key] = replaceBranding(obj[key]);
+        }
+
+        return obj;
+      }
+
+      return obj;
+    };
+
+    data = replaceBranding(data);
+
     if (typeof data === "object" && data !== null) {
       data.developer = "@sahilxalone";
       data.footer = "@sahilxalone";
@@ -52,5 +87,5 @@ app.get("/all-in-one", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server started on ${PORT}`);
+  console.log(`Server started on port ${PORT}`);
 });
